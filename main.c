@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #define max 50
 #define maxNome 60
@@ -28,13 +29,6 @@ struct Aluno {
     char depto[maxSigla]; //departamento onde estuda
 };
 
-// typedef struct {
-//     int codigo;
-//     int codigoAluno;
-//     int codigoProfessor;
-//     char titulo[maxNome];
-// } PI;
-
 typedef struct TG TG;
 struct TG {
     int codigo;
@@ -44,11 +38,10 @@ struct TG {
     int qtdeVotos; //somatório dos votos recebidos
 };
 
-
 typedef struct Eleitor Eleitor;
 struct Eleitor {
     char cpf[15];
-    int votou; //true se já votou; false se não votou
+    bool votou; //true se já votou; false se não votou
     int codigoTG;
 };
 
@@ -63,6 +56,12 @@ int qtdeDocentes; //qtde de professores no vetor
 
 Eleitor comissao[max]; //vetor de eleitores
 int qtdeEleitores; //qtde de eleitores no vetor
+
+
+int verificaAluno(int codigo, const char *departamento);
+int verificaProfessor(int codigo);
+bool verificarCPF(const char *cpf);
+void menuDois();
 
 void lerAluno(){
     FILE *file;
@@ -117,46 +116,27 @@ void lerProfessor() {
     fclose(file);
 }
 
-// Funçao para verificar se o aluno existe
-int verificaAluno(int codigo, const char *departamento) {
-    for (int i = 0; i < qtdeFormandos; i++) {
-        if (formandos[i].matricula == codigo) {
-            if (strcmp(formandos[i].depto, departamento) == 0) {
-                return 1; // Aluno encontrado e departamento correto
-            }
-            return 0; // Aluno encontrado, mas departamento errado
-        }
-    }
-    return -1; // Aluno nao encontrado
-}
-
-// Funçao para verificar se o professor existe
-int verificaProfessor(int codigo) {
-    for (int i = 0; i < qtdeDocentes; i++) {
-        if (docentes[i].codigo == codigo) {
-            return 1; // Professor encontrado
-        }
-    }
-    return 0; // Professor nao encontrado
-}
-
-void lerPI(const char *depto){
+int lerPI(const char *depto, int totalPIs){
     FILE *file;
     char nomeArquivo[maxNome];
+    int qtdTGsArquivo = 0;
     snprintf(nomeArquivo, sizeof(nomeArquivo), "PI_%s.txt", depto);
 
     // Abre o arquivo para leitura
     file = fopen(nomeArquivo, "r");
     if (file == NULL) {
-        perror("Arquivo faltando");
-        return;
+        printf("Erro ao abrir arquivo %s\n", nomeArquivo);
+        perror("Erro");
+        exit(EXIT_FAILURE);
     }
 
     // Lê a quantidade de pis
-    fscanf(file, "%d", &qtdeTGs);
+    fscanf(file, "%d", &qtdTGsArquivo);
+    qtdeTGs = qtdeTGs + qtdTGsArquivo;
     
     // Lê as informações dos pis
-    for (int i = 0; i < qtdeTGs; i++) {
+    for (int i = totalPIs; i < qtdTGsArquivo + totalPIs; i++) {
+
         fscanf(file, "%d %d %d %[^\n]", 
                &listaPIs[i].codigo, 
                &listaPIs[i].autor, 
@@ -182,6 +162,47 @@ void lerPI(const char *depto){
             printf("Erro no arquivo %s: Professor com codigo %d nao encontrado.\n", nomeArquivo, listaPIs[i].orientador);
             fclose(file);
             exit(EXIT_FAILURE);
+        }
+    }
+
+    // Fecha o arquivo
+    fclose(file);
+    return totalPIs + 1;
+}
+
+void lerPis(){
+    int totalPIs = 0;    // Total de PIs lidos de todos os arquivos
+
+    // PIs
+    totalPIs += lerPI("LOG", totalPIs);
+    totalPIs += lerPI("AMS", totalPIs);
+    totalPIs += lerPI("ADS", totalPIs);
+    totalPIs += lerPI("DSM", totalPIs);
+    totalPIs += lerPI("CEX", totalPIs);
+    totalPIs += lerPI("EMP", totalPIs);
+    totalPIs += lerPI("POL", totalPIs);
+}
+
+void lerComissao() {
+    FILE *file;
+
+    // Abre o arquivo para leitura
+    file = fopen("comissao.txt", "r");
+    if (file == NULL) {
+        perror("Arquivo comissao.txt faltando");
+        return;
+    }
+
+    // Lê a quantidade de professores
+    fscanf(file, "%d", &qtdeEleitores);
+
+    // Lê as informações dos professores
+    for (int i = 0; i < qtdeEleitores; i++) {
+        fscanf(file, "%s", comissao[i].cpf);
+
+        if (!verificarCPF(comissao[i].cpf)) {
+            printf("Erro no arquivo comissao.txt: CPF %s invalido\n", comissao[i].cpf);
+            return;
         }
     }
 
@@ -224,21 +245,106 @@ void mostrarPI() {
     }
 }
 
+void mostrarComissao() {
+   // Exibe os PIS
+    for (int i = 0; i < qtdeEleitores; i++) {
+        printf("Comissao %d:\n", i + 1);
+        printf("CPF: %s\n", comissao[i].cpf);
+        printf("Votou: %d\n", comissao[i].votou);
+        printf("TG: %d\n\n", comissao[i].codigoTG);
+    }
+}
 
-int verificarCPF (char cpf[15])
-{
-    //ATENCAO: Nao altere nada de cpf (variavel de entrada), pois 
-    //você estará alterando a string original também
-    int valido = 1;
-    //faltam outras condições nesse IF. Esse é só um exemplo
-    if(isdigit(cpf[0])==0 || cpf[3]!='.')
-    valido = 0;
-    int num;
-    char aux[2]; //declaro uma string auxiliar
-    aux[0] = cpf[0]; //quero saber o respectivo de '1'
-    aux[1] = '\0'; //finalizo a string auxiliar
-    num = atoi(aux); //atoi recebe string e retorna 1
-    return valido;
+
+
+// Funçao para verificar se o aluno existe
+int verificaAluno(int codigo, const char *departamento) {
+    for (int i = 0; i < qtdeFormandos; i++) {
+        if (formandos[i].matricula == codigo) {
+            if (strcmp(formandos[i].depto, departamento) == 0) {
+                return 1; // Aluno encontrado e departamento correto
+            }
+            return 0; // Aluno encontrado, mas departamento errado
+        }
+    }
+    return -1; // Aluno nao encontrado
+}
+
+// Funçao para verificar se o professor existe
+int verificaProfessor(int codigo) {
+    for (int i = 0; i < qtdeDocentes; i++) {
+        if (docentes[i].codigo == codigo) {
+            return 1; // Professor encontrado
+        }
+    }
+    return 0; // Professor nao encontrado
+}
+
+
+// int verificarCPF (char cpf[15])
+// {
+//     //ATENCAO: Nao altere nada de cpf (variavel de entrada), pois 
+//     //você estará alterando a string original também
+//     int valido = 1;
+//     // int num = 0;
+//     //faltam outras condições nesse IF. Esse é só um exemplo
+//     if(isdigit(cpf[0])==0 || cpf[3]!='.')
+//     valido = 0;
+//     // char aux[2]; //declaro uma string auxiliar
+//     // aux[0] = cpf[0]; //quero saber o respectivo de '1'
+//     // aux[1] = '\0'; //finalizo a string auxiliar
+//     // num = atoi(aux); //atoi recebe string e retorna 1
+//     return valido;
+// }
+
+
+bool verificarCPF(const char *cpf) {
+    int i, j, digito1 = 0, digito2 = 0;
+    int numeros[11];
+    int count = 0;
+
+    // Verifica se o CPF tem 14 caracteres no formato "000.000.000-00"
+    if (strlen(cpf) != 14) return false;
+
+    // Extrai os números do CPF ignorando pontos e hífen
+    for (i = 0; i < 14; i++) {
+        if (isdigit(cpf[i])) {
+            numeros[count] = cpf[i] - '0';
+            count++;
+        } else if (cpf[i] != '.' && cpf[i] != '-') {
+            return false; // Formato inválido
+        }
+    }
+
+    // Verifica se foram extraídos exatamente 11 números
+    if (count != 11) return false;
+
+    // Verifica se todos os números são iguais, o que invalidaria o CPF
+    bool todos_iguais = true;
+    for (i = 1; i < 11; i++) {
+        if (numeros[i] != numeros[0]) {
+            todos_iguais = false;
+            break;
+        }
+    }
+    if (todos_iguais) return false;
+
+    // Calcula o primeiro dígito verificador
+    for (i = 0, j = 10; i < 9; i++, j--) {
+        digito1 += numeros[i] * j;
+    }
+    digito1 = 11 - (digito1 % 11);
+    if (digito1 >= 10) digito1 = 0;
+
+    // Calcula o segundo dígito verificador
+    for (i = 0, j = 11; i < 10; i++, j--) {
+        digito2 += numeros[i] * j;
+    }
+    digito2 = 11 - (digito2 % 11);
+    if (digito2 >= 10) digito2 = 0;
+
+    // Verifica se os dígitos verificadores estão corretos
+    return digito1 == numeros[9] && digito2 == numeros[10];
 }
 
 // void verificarComissao(){
@@ -344,11 +450,16 @@ void menuTres(){
 int main() {
 //    carregarDados();
     // mostrarProfessor();
+    // mostrarPI();
 
     lerProfessor();
     lerAluno();
-    lerPI("AMS");
+
+    lerPis();
     mostrarPI();
+
+    lerComissao();
+    // mostrarComissao();
 
     // char opcao;
     // do {
