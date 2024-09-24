@@ -1,0 +1,21 @@
+PI vencedor
+Codigo: 13
+Titulo: TCCdeLO1
+Aluno: Pedro Alves
+Curso aluno: LOG
+Orientador: Fulano de Tal
+Depto orientador: AMS
+
+PI vencedor
+Codigo: 45
+Titulo: FatecFlix
+Aluno: Mauricio Oliveira
+Curso aluno: AMS
+Orientador: Jorge da Silva
+Depto orientador: ADS
+
+Eleitores presentes 
+486.306.885-99
+393.486.442-20
+
+Eleitores ausentes 
